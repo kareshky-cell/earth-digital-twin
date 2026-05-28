@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Earth Digital Twin — Own a Country on Solana</title>
+<meta name="description" content="Only 195 country NFTs on Solana. Buy your country. Set the next price. Own a piece of the planet.">
+<meta property="og:title" content="Earth Digital Twin">
+<meta property="og:description" content="Only 195 country NFTs on Solana. Buy your country. Set the next price.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23378ADD'/%3E%3C/svg%3E">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0a0e1a;
+    color: #e6e9ef;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  .hero {
+    background: linear-gradient(135deg, #0a0e1a 0%, #1a2238 100%);
+    padding: 60px 20px 40px;
+    text-align: center;
+    border-bottom: 1px solid rgba(133, 183, 235, 0.15);
+  }
+  .hero h1 {
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 700;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, #85B7EB, #97C459);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.02em;
+  }
+  .hero .tagline {
+    font-size: clamp(16px, 2vw, 20px);
+    color: #a8b3c7;
+    max-width: 700px;
+    margin: 0 auto 24px;
+  }
+  .hero .badges {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+  }
+  .badge {
+    background: rgba(133, 183, 235, 0.1);
+    border: 1px solid rgba(133, 183, 235, 0.3);
+    color: #85B7EB;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .badge.green { background: rgba(151, 196, 89, 0.1); border-color: rgba(151, 196, 89, 0.3); color: #97C459; }
+  .badge.amber { background: rgba(239, 159, 39, 0.1); border-color: rgba(239, 159, 39, 0.3); color: #EF9F27; }
+  .pitch {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 24px 20px;
+    color: #c8d0de;
+    font-size: 15px;
+  }
+  .pitch p { margin-bottom: 12px; }
+  .pitch strong { color: #e6e9ef; }
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .topbar .title {
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .topbar .subtitle {
+    font-size: 13px;
+    color: #8a93a6;
+  }
+  button {
+    background: rgba(255,255,255,0.05);
+    color: #e6e9ef;
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  button:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.25); }
+  button:active { transform: scale(0.98); }
+  button.primary {
+    background: #378ADD;
+    border-color: #378ADD;
+    color: white;
+    font-weight: 500;
+  }
+  button.primary:hover { background: #185FA5; border-color: #185FA5; }
+  input[type="text"], input[type="number"], input {
+    background: rgba(255,255,255,0.05);
+    color: #e6e9ef;
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+  }
+  input:focus { border-color: #378ADD; }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 240px;
+    gap: 16px;
+  }
+  @media (max-width: 768px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+  .globe-wrap {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 12px;
+  }
+  #globe-container {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    background: #0a0e1a;
+  }
+  #globe { display: block; width: 100%; height: auto; cursor: grab; }
+  #tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: #1a2238;
+    border: 1px solid rgba(133, 183, 235, 0.4);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    display: none;
+    z-index: 10;
+    white-space: nowrap;
+    color: #e6e9ef;
+  }
+  #zoom-controls {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 5;
+  }
+  #zoom-controls button {
+    width: 32px; height: 32px;
+    padding: 0;
+    background: rgba(26, 34, 56, 0.85);
+    backdrop-filter: blur(4px);
+  }
+  #loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0a0e1a;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #8a93a6;
+  }
+  .controls-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    align-items: center;
+  }
+  .controls-row input { flex: 1; }
+  .legend {
+    display: flex;
+    gap: 14px;
+    margin-top: 10px;
+    font-size: 11px;
+    color: #8a93a6;
+    flex-wrap: wrap;
+  }
+  .legend-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    vertical-align: middle;
+    margin-right: 4px;
+  }
+  .leaderboard-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: #a8b3c7;
+    margin-bottom: 8px;
+  }
+  .leaderboard {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .leaderboard-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    font-size: 13px;
+    transition: all 0.15s;
+  }
+  .leaderboard-item:hover { background: rgba(255,255,255,0.06); }
+  .leaderboard-item.yours { background: rgba(151,196,89,0.1); border-color: rgba(151,196,89,0.3); }
+  .leaderboard-item .rank {
+    font-size: 11px;
+    color: #6b7383;
+    width: 18px;
+  }
+  .leaderboard-item .name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .leaderboard-item .price {
+    font-weight: 500;
+    color: #97C459;
+  }
+  #detail-panel {
+    margin-top: 16px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 18px 20px;
+    display: none;
+  }
+  .detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  #d-name { font-size: 20px; font-weight: 600; }
+  #d-owner { font-size: 13px; color: #8a93a6; margin-top: 4px; }
+  #d-price { font-size: 24px; font-weight: 600; color: #97C459; }
+  #d-usd { font-size: 12px; color: #8a93a6; }
+  #d-actions {
+    margin-top: 14px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  #d-status {
+    font-size: 12px;
+    color: #8a93a6;
+    margin-top: 10px;
+    padding: 8px 10px;
+    background: rgba(133,183,235,0.05);
+    border-left: 2px solid rgba(133,183,235,0.4);
+    border-radius: 4px;
+    display: none;
+  }
+  #d-status.visible { display: block; }
+  .stats {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  @media (max-width: 600px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+  }
+  .stat {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .stat-label { font-size: 11px; color: #8a93a6; }
+  .stat-value { font-size: 18px; font-weight: 600; margin-top: 4px; }
+  .stat-sub { font-size: 10px; color: #6b7383; }
+  footer {
+    text-align: center;
+    padding: 30px 20px;
+    color: #6b7383;
+    font-size: 12px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    margin-top: 40px;
+  }
+  footer a { color: #85B7EB; text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <h1>Earth Digital Twin</h1>
+  <p class="tagline">Own a country on the Solana blockchain. Buy it, name your price, hold it, flip it.</p>
+  <div class="badges">
+    <span class="badge">Built on Solana</span>
+    <span class="badge green">Only 195 NFTs — one per country</span>
+    <span class="badge amber">100% price cap per sale</span>
+  </div>
+</section>
+
+<div class="pitch">
+  <p><strong>This is a planet, tokenised.</strong> Every country on Earth — exactly 195 of them — exists as a unique NFT on the Solana network. There will never be more. You can own Brazil, Iran, the United Kingdom, or any country you have a connection to.</p>
+  <p><strong>The rules are simple.</strong> Each country starts at a price based on its natural resources. Buy a country and you own its NFT. The price automatically jumps 20% for the next buyer — but you can set your own price up to a 100% increase (a hard ceiling, so no one can sit on a country forever). Sell whenever someone meets your price. Repeat.</p>
+  <p><strong>Why this matters.</strong> 10% of every sale goes back to the protocol to keep the lights on. The other 90% goes to you, the seller. Your country is yours until someone wants it more. The leaderboard tracks the 10 most expensive countries in real time — own one and watch the world fight to take it from you.</p>
+</div>
+
+<div class="container">
+
+  <div class="topbar">
+    <div>
+      <div class="title">The Globe</div>
+      <div class="subtitle">Click a country to see who owns it and what it costs.</div>
+    </div>
+    <button id="connect-btn" class="primary">Connect Phantom</button>
+  </div>
+
+  <div class="grid">
+
+    <div class="globe-wrap">
+      <div id="globe-container">
+        <canvas id="globe"></canvas>
+        <div id="tooltip"></div>
+        <div id="zoom-controls">
+          <button id="zoom-in" title="Zoom in">+</button>
+          <button id="zoom-out" title="Zoom out">−</button>
+          <button id="zoom-reset" title="Reset zoom" style="font-size:11px;">↻</button>
+        </div>
+        <div id="loading">Loading world map...</div>
+      </div>
+      <div class="controls-row">
+        <input type="text" id="search" placeholder="Search country..." />
+        <button id="rotate-btn">Pause spin</button>
+      </div>
+      <div class="legend">
+        <span><span class="legend-dot" style="background:#85B7EB"></span>Available</span>
+        <span><span class="legend-dot" style="background:#1D9E75"></span>Owned by others</span>
+        <span><span class="legend-dot" style="background:#97C459"></span>Owned by you</span>
+        <span><span class="legend-dot" style="background:#D85A30"></span>Selected</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="leaderboard-title">Top 10 most expensive</div>
+      <div id="leaderboard" class="leaderboard"></div>
+    </div>
+
+  </div>
+
+  <div id="detail-panel">
+    <div class="detail-header">
+      <div style="min-width:0;flex:1;">
+        <div id="d-name"></div>
+        <div id="d-owner"></div>
+      </div>
+      <div style="text-align:right;">
+        <div id="d-price"></div>
+        <div id="d-usd"></div>
+      </div>
+    </div>
+    <div id="d-actions"></div>
+    <div id="d-status"></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">Total volume</div>
+      <div id="stat-vol" class="stat-value">0 SOL</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Royalties earned</div>
+      <div id="stat-roy" class="stat-value">0 SOL</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Your countries</div>
+      <div id="stat-own" class="stat-value">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">SOL price</div>
+      <div id="stat-sol" class="stat-value">$185</div>
+      <div id="stat-sol-src" class="stat-sub">loading...</div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <p>Earth Digital Twin · Built on Solana · This is a prototype. No real transactions yet.</p>
+  <p style="margin-top:6px;">Want to be notified at launch? Follow the project for updates.</p>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script>
+let SOL_USD = 185;
+const SITE_OWNER = "Site (you)";
+const DEFAULT_INCREASE = 1.20;
+const PRICE_CAP_MULTIPLIER = 2.00;
+const BASE_SCALE = 240;
+const MIN_ZOOM = 0.6;
+const MAX_ZOOM = 6;
+
+const priceMap = {
+  "Russia": 2.000, "United States of America": 1.996, "Saudi Arabia": 1.992,
+  "Canada": 1.988, "Iran": 1.984, "China": 1.980, "Brazil": 1.976, "Australia": 1.972,
+  "Iraq": 1.968, "Venezuela": 1.964, "United Arab Emirates": 1.960, "Kuwait": 1.956,
+  "Nigeria": 1.952, "Mexico": 1.948, "Kazakhstan": 1.944, "Algeria": 1.900, "Libya": 1.880,
+  "Norway": 1.860, "Qatar": 1.840, "India": 1.820, "Indonesia": 1.800, "Ukraine": 1.800,
+  "South Africa": 1.780, "Argentina": 1.760, "Democratic Republic of the Congo": 1.740,
+  "Angola": 1.720, "Egypt": 1.700, "Turkey": 1.680, "Chile": 1.660, "Malaysia": 1.640,
+  "United Kingdom": 1.620, "France": 1.600, "Germany": 1.580, "Spain": 1.560, "Italy": 1.540,
+  "Japan": 1.520, "South Korea": 1.500, "Thailand": 1.480, "Vietnam": 1.460, "Pakistan": 1.440,
+  "Poland": 1.420, "Sweden": 1.400, "Finland": 1.380, "Greece": 1.360, "Israel": 1.320,
+  "Palestine": 1.316, "Morocco": 1.300, "Kenya": 1.280, "Cuba": 1.260, "Mongolia": 1.240,
+  "Republic of Korea": 1.500, "Dem. Rep. Korea": 1.300, "Czech Republic": 1.250,
+  "Czechia": 1.250, "Romania": 1.230, "Netherlands": 1.220, "Belgium": 1.210, "Portugal": 1.200,
+  "Switzerland": 1.190, "Austria": 1.180, "Denmark": 1.170, "Ireland": 1.160, "New Zealand": 1.150,
+  "Philippines": 1.140, "Colombia": 1.130, "Peru": 1.120, "Ecuador": 1.110, "Bolivia": 1.100,
+  "Sudan": 1.090, "South Sudan": 1.080, "Ethiopia": 1.070, "Tanzania": 1.060, "Mozambique": 1.050,
+  "Zambia": 1.040, "Zimbabwe": 1.030, "Botswana": 1.025
+};
+
+const state = {
+  wallet: null, selected: null, rotation: [0, -15], spinning: true,
+  volume: 0, royalty: 0, countries: [], width: 640, height: 420, zoom: 1
+};
+
+const canvas = document.getElementById("globe");
+const ctx = canvas.getContext("2d");
+const tooltip = document.getElementById("tooltip");
+const tooltipParent = document.getElementById("globe-container");
+
+const projection = d3.geoOrthographic().scale(BASE_SCALE).translate([320, 210]).clipAngle(90).rotate(state.rotation);
+const path = d3.geoPath(projection, ctx);
+
+function setupCanvas() {
+  const containerWidth = tooltipParent.clientWidth;
+  const aspectRatio = state.height / state.width;
+  const cssWidth = containerWidth;
+  const cssHeight = containerWidth * aspectRatio;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = cssWidth * dpr;
+  canvas.height = cssHeight * dpr;
+  canvas.style.width = cssWidth + "px";
+  canvas.style.height = cssHeight + "px";
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.scale(dpr, dpr);
+  state.cssWidth = cssWidth;
+  state.cssHeight = cssHeight;
+  applyProjection();
+}
+
+function applyProjection() {
+  const scaleFactor = state.cssWidth / 640;
+  projection.scale(BASE_SCALE * scaleFactor * state.zoom).translate([state.cssWidth / 2, state.cssHeight / 2]);
+}
+
+function priceFor(name) {
+  if (priceMap[name] !== undefined) return priceMap[name];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0;
+  return 1 + Math.abs(hash % 100) / 100;
+}
+
+function colorFor(country) {
+  if (state.selected && state.selected.name === country.name) return "#D85A30";
+  if (country.owner === state.wallet && state.wallet) return "#97C459";
+  if (country.owner === SITE_OWNER) return "#85B7EB";
+  return "#1D9E75";
+}
+
+function draw() {
+  ctx.clearRect(0, 0, state.cssWidth, state.cssHeight);
+  ctx.beginPath(); path({ type: "Sphere" });
+  ctx.fillStyle = "#0f1828"; ctx.fill();
+  ctx.beginPath(); path(d3.geoGraticule10());
+  ctx.strokeStyle = "rgba(133, 183, 235, 0.12)"; ctx.lineWidth = 0.5; ctx.stroke();
+  state.countries.forEach(c => {
+    ctx.beginPath(); path(c.feature);
+    ctx.fillStyle = colorFor(c); ctx.fill();
+    ctx.strokeStyle = "rgba(10,14,26,0.5)"; ctx.lineWidth = 0.4; ctx.stroke();
+  });
+  ctx.beginPath(); path({ type: "Sphere" });
+  ctx.strokeStyle = "rgba(133, 183, 235, 0.6)"; ctx.lineWidth = 1; ctx.stroke();
+}
+
+function renderLeaderboard() {
+  const top = [...state.countries].sort((a, b) => b.price - a.price).slice(0, 10);
+  const lb = document.getElementById("leaderboard");
+  lb.innerHTML = top.map((c, i) => {
+    const isYours = c.owner === state.wallet && state.wallet;
+    return `<div class="leaderboard-item ${isYours ? 'yours' : ''}" data-name="${c.name}">
+      <div style="display:flex;align-items:center;gap:6px;min-width:0;">
+        <span class="rank">#${i + 1}</span>
+        <span class="name">${c.name}</span>
+      </div>
+      <span class="price">${c.price.toFixed(2)}</span>
+    </div>`;
+  }).join("");
+  lb.querySelectorAll("[data-name]").forEach(el => {
+    el.addEventListener("click", () => selectCountry(state.countries.find(c => c.name === el.dataset.name)));
+  });
+}
+
+function maskAddress(addr) {
+  if (!addr || addr === SITE_OWNER) return "Protocol";
+  return addr.slice(0, 4) + "..." + addr.slice(-4);
+}
+
+function showStatus(msg) {
+  const s = document.getElementById("d-status");
+  s.textContent = msg;
+  s.classList.add("visible");
+}
+
+function selectCountry(c) {
+  if (!c) return;
+  state.selected = c;
+  const panel = document.getElementById("detail-panel");
+  panel.style.display = "block";
+  document.getElementById("d-name").textContent = c.name;
+  const ownerLabel = c.owner === SITE_OWNER ? "Available — owned by protocol" : (c.owner === state.wallet ? "Owned by you" : "Owned by " + maskAddress(c.owner));
+  document.getElementById("d-owner").textContent = ownerLabel;
+  document.getElementById("d-price").textContent = c.price.toFixed(3) + " SOL";
+  document.getElementById("d-usd").textContent = "≈ $" + Math.round(c.price * SOL_USD).toLocaleString();
+  const actions = document.getElementById("d-actions");
+  document.getElementById("d-status").classList.remove("visible");
+  if (!state.wallet) {
+    actions.innerHTML = `<button onclick="connectWallet()" class="primary">Connect wallet to buy</button>`;
+  } else if (c.owner === state.wallet) {
+    const cap = c.price * PRICE_CAP_MULTIPLIER;
+    actions.innerHTML = `
+      <label style="font-size:12px;color:#8a93a6;">New price (cap ${cap.toFixed(2)} SOL)</label>
+      <input id="new-price" type="number" step="0.01" min="${c.price.toFixed(2)}" max="${cap.toFixed(2)}" value="${(c.price * 1.5).toFixed(2)}" style="width:120px;" />
+      <button onclick="setNewPrice()">Update price</button>`;
+  } else {
+    actions.innerHTML = `<button onclick="buyCountry()" class="primary">Buy for ${c.price.toFixed(2)} SOL</button>`;
+  }
+  draw();
+}
+
+window.connectWallet = function() {
+  state.wallet = "Phn" + Math.random().toString(36).slice(2, 10) + "x" + Math.random().toString(36).slice(2, 6);
+  document.getElementById("connect-btn").textContent = maskAddress(state.wallet);
+  if (state.selected) selectCountry(state.selected);
+  updateStats();
+};
+
+window.buyCountry = function() {
+  const c = state.selected;
+  if (!c || !state.wallet) return;
+  const royalty = c.price * 0.10;
+  const toSeller = c.price * 0.90;
+  state.volume += c.price;
+  state.royalty += royalty;
+  const prevOwner = c.owner;
+  c.owner = state.wallet;
+  c.price = c.price * DEFAULT_INCREASE;
+  selectCountry(c);
+  showStatus(`Bought! ${royalty.toFixed(3)} SOL royalty to protocol, ${toSeller.toFixed(3)} SOL to ${maskAddress(prevOwner)}. Default +20% applied. New price ${c.price.toFixed(2)} SOL. Set your own price below (up to ${(c.price * PRICE_CAP_MULTIPLIER).toFixed(2)} SOL).`);
+  renderLeaderboard();
+  updateStats();
+};
+
+window.setNewPrice = function() {
+  const c = state.selected;
+  const input = document.getElementById("new-price");
+  const val = parseFloat(input.value);
+  const cap = c.price * PRICE_CAP_MULTIPLIER;
+  if (isNaN(val) || val < c.price) { showStatus("Price must be at least current price."); return; }
+  if (val > cap) {
+    c.price = cap;
+    showStatus(`Capped at 100% increase: ${c.price.toFixed(2)} SOL.`);
+  } else {
+    c.price = val;
+    showStatus(`Listed for ${c.price.toFixed(2)} SOL.`);
+  }
+  selectCountry(c); renderLeaderboard();
+};
+
+function updateStats() {
+  document.getElementById("stat-vol").textContent = state.volume.toFixed(2) + " SOL";
+  document.getElementById("stat-roy").textContent = state.royalty.toFixed(3) + " SOL";
+  const owned = state.countries.filter(c => c.owner === state.wallet).length;
+  document.getElementById("stat-own").textContent = owned.toString();
+}
+
+function getCanvasCoords(e) {
+  const rect = canvas.getBoundingClientRect();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  return { x: clientX - rect.left, y: clientY - rect.top, clientX, clientY };
+}
+
+function findCountryAt(x, y) {
+  const inv = projection.invert([x, y]);
+  if (!inv) return null;
+  const [lng, lat] = inv;
+  for (const c of state.countries) {
+    if (d3.geoContains(c.feature, [lng, lat])) return c;
+  }
+  return null;
+}
+
+function setZoom(newZoom) {
+  state.zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
+  applyProjection();
+  draw();
+}
+
+document.getElementById("zoom-in").addEventListener("click", () => setZoom(state.zoom * 1.4));
+document.getElementById("zoom-out").addEventListener("click", () => setZoom(state.zoom / 1.4));
+document.getElementById("zoom-reset").addEventListener("click", () => setZoom(1));
+
+canvas.addEventListener("wheel", e => {
+  e.preventDefault();
+  const delta = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+  setZoom(state.zoom * delta);
+}, { passive: false });
+
+let dragging = false, didDrag = false, lastX = 0, lastY = 0;
+
+canvas.addEventListener("click", e => {
+  if (didDrag) return;
+  const { x, y } = getCanvasCoords(e);
+  const c = findCountryAt(x, y);
+  if (c) selectCountry(c);
+});
+
+canvas.addEventListener("mousemove", e => {
+  const { x, y } = getCanvasCoords(e);
+  if (dragging) {
+    const dx = e.clientX - lastX, dy = e.clientY - lastY;
+    if (Math.abs(dx) + Math.abs(dy) > 2) didDrag = true;
+    const dragSensitivity = 0.5 / state.zoom;
+    state.rotation[0] += dx * dragSensitivity;
+    state.rotation[1] = Math.max(-60, Math.min(60, state.rotation[1] - dy * dragSensitivity * 0.6));
+    projection.rotate(state.rotation);
+    lastX = e.clientX; lastY = e.clientY;
+    state.spinning = false;
+    document.getElementById("rotate-btn").textContent = "Resume spin";
+    return;
+  }
+  const c = findCountryAt(x, y);
+  if (c) {
+    tooltip.style.display = "block";
+    tooltip.style.left = (x + 12) + "px";
+    tooltip.style.top = (y + 12) + "px";
+    tooltip.innerHTML = `<div style="font-weight:500">${c.name}</div><div style="color:#8a93a6">${c.price.toFixed(2)} SOL · ${c.owner === SITE_OWNER ? 'Available' : 'Owned'}</div>`;
+    canvas.style.cursor = "pointer";
+  } else {
+    tooltip.style.display = "none";
+    canvas.style.cursor = "grab";
+  }
+});
+
+canvas.addEventListener("mouseleave", () => { tooltip.style.display = "none"; });
+
+canvas.addEventListener("mousedown", e => {
+  dragging = true; didDrag = false;
+  lastX = e.clientX; lastY = e.clientY;
+  canvas.style.cursor = "grabbing";
+});
+
+window.addEventListener("mouseup", () => {
+  if (dragging) {
+    dragging = false;
+    canvas.style.cursor = "grab";
+    setTimeout(() => { didDrag = false; }, 50);
+  }
+});
+
+canvas.addEventListener("touchstart", e => {
+  if (e.touches.length === 1) {
+    dragging = true; didDrag = false;
+    lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+  }
+}, { passive: true });
+
+canvas.addEventListener("touchmove", e => {
+  if (dragging && e.touches.length === 1) {
+    e.preventDefault();
+    const dx = e.touches[0].clientX - lastX, dy = e.touches[0].clientY - lastY;
+    if (Math.abs(dx) + Math.abs(dy) > 2) didDrag = true;
+    const dragSensitivity = 0.5 / state.zoom;
+    state.rotation[0] += dx * dragSensitivity;
+    state.rotation[1] = Math.max(-60, Math.min(60, state.rotation[1] - dy * dragSensitivity * 0.6));
+    projection.rotate(state.rotation);
+    lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+    state.spinning = false;
+    document.getElementById("rotate-btn").textContent = "Resume spin";
+  }
+}, { passive: false });
+
+canvas.addEventListener("touchend", e => {
+  if (!didDrag && e.changedTouches.length === 1) {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.changedTouches[0].clientX - rect.left;
+    const y = e.changedTouches[0].clientY - rect.top;
+    const c = findCountryAt(x, y);
+    if (c) selectCountry(c);
+  }
+  dragging = false;
+  setTimeout(() => { didDrag = false; }, 50);
+});
+
+document.getElementById("rotate-btn").addEventListener("click", () => {
+  state.spinning = !state.spinning;
+  document.getElementById("rotate-btn").textContent = state.spinning ? "Pause spin" : "Resume spin";
+});
+
+document.getElementById("search").addEventListener("input", e => {
+  const q = e.target.value.toLowerCase().trim();
+  if (!q) return;
+  const match = state.countries.find(c => c.name.toLowerCase().startsWith(q));
+  if (match) {
+    const centroid = d3.geoCentroid(match.feature);
+    state.rotation = [-centroid[0], -centroid[1]];
+    projection.rotate(state.rotation);
+    state.spinning = false;
+    document.getElementById("rotate-btn").textContent = "Resume spin";
+    selectCountry(match);
+  }
+});
+
+window.addEventListener("resize", () => { setupCanvas(); draw(); });
+
+function fetchSolPrice() {
+  fetch("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd")
+    .then(r => r.ok ? r.json() : Promise.reject("HTTP " + r.status))
+    .then(data => {
+      if (data && data.solana && data.solana.usd) {
+        SOL_USD = data.solana.usd;
+        document.getElementById("stat-sol").textContent = "$" + SOL_USD.toFixed(2);
+        document.getElementById("stat-sol-src").textContent = "live · CoinGecko";
+        if (state.selected) {
+          document.getElementById("d-usd").textContent = "≈ $" + Math.round(state.selected.price * SOL_USD).toLocaleString();
+        }
+      }
+    })
+    .catch(() => {
+      document.getElementById("stat-sol-src").textContent = "offline fallback";
+    });
+}
+
+function tick() {
+  if (state.spinning) {
+    state.rotation[0] -= 0.15 / state.zoom;
+    projection.rotate(state.rotation);
+  }
+  draw();
+  requestAnimationFrame(tick);
+}
+
+fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
+  .then(r => r.json())
+  .then(world => {
+    const features = topojson.feature(world, world.objects.countries).features;
+    const palestineFeature = {
+      type: "Feature",
+      properties: { name: "Palestine" },
+      geometry: { type: "Polygon", coordinates: [[
+        [34.95, 31.35], [34.55, 31.50], [34.49, 31.59], [34.93, 32.20],
+        [35.10, 32.55], [35.55, 32.39], [35.55, 31.78], [35.40, 31.49],
+        [35.42, 31.10], [34.95, 31.35]
+      ]] }
+    };
+    features.push(palestineFeature);
+    state.countries = features
+      .filter(f => f.properties && f.properties.name && f.properties.name !== "Antarctica")
+      .map(f => ({ name: f.properties.name, feature: f, price: priceFor(f.properties.name), owner: SITE_OWNER }));
+    document.getElementById("loading").style.display = "none";
+    setupCanvas();
+    renderLeaderboard();
+    fetchSolPrice();
+    tick();
+  })
+  .catch(err => {
+    document.getElementById("loading").innerHTML = "Failed to load world map. " + err.message;
+  });
+</script>
+
+</body>
+</html>
