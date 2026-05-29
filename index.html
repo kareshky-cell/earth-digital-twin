@@ -416,6 +416,7 @@ let SOL_USD = 185;
 const SITE_OWNER = "Site (you)";
 const DEFAULT_INCREASE = 1.20;
 const PRICE_CAP_MULTIPLIER = 2.00;
+const ROYALTY_RATE = 0.10;
 const BASE_SCALE = 240;
 const MIN_ZOOM = 0.6;
 const MAX_ZOOM = 6;
@@ -549,14 +550,10 @@ function selectCountry(c) {
     actions.innerHTML = `<button onclick="connectWallet()" class="primary">Connect wallet to buy</button>`;
   } else if (c.owner === state.wallet) {
     if (c.priceLocked) {
-      actions.innerHTML = `<span style="font-size:12px;color:#8a93a6;">Price locked at ${c.price.toFixed(2)} SOL. You can change it again only after someone buys it from you.</span>`;
+      actions.innerHTML = `<span style="font-size:12px;color:#8a93a6;">Price locked — buyer pays ${c.price.toFixed(2)} SOL (your take ${(c.price / (1 + ROYALTY_RATE)).toFixed(2)} SOL). You can change it again only after someone buys it from you.</span>`;
     } else {
-      const cap = c.purchasePrice * PRICE_CAP_MULTIPLIER;
-      const minPrice = c.purchasePrice;
-      actions.innerHTML = `
-        <label style="font-size:12px;color:#8a93a6;">Set price once (between ${minPrice.toFixed(2)} and ${cap.toFixed(2)} SOL)</label>
-        <input id="new-price" type="number" step="0.01" min="${minPrice.toFixed(2)}" max="${cap.toFixed(2)}" value="${c.price.toFixed(2)}" style="width:120px;" />
-        <button onclick="setNewPrice()">Lock price</button>`;
+      actions.innerHTML = renderSlider(c);
+      requestAnimationFrame(() => initSlider(c));
     }
   } else {
     actions.innerHTML = `<button onclick="buyCountry()" class="primary">Buy for ${c.price.toFixed(2)} SOL</button>`;
@@ -574,40 +571,88 @@ window.connectWallet = function() {
 window.buyCountry = function() {
   const c = state.selected;
   if (!c || !state.wallet) return;
-  const royalty = c.price * 0.10;
-  const toSeller = c.price * 0.90;
-  state.volume += c.price;
+  const buyerPays = c.price;
+  const royalty = buyerPays - (buyerPays / (1 + ROYALTY_RATE));
+  const toSeller = buyerPays - royalty;
+  state.volume += buyerPays;
   state.royalty += royalty;
   const prevOwner = c.owner;
-  const paidPrice = c.price;
   c.owner = state.wallet;
-  c.purchasePrice = paidPrice;
-  c.price = paidPrice * DEFAULT_INCREASE;
+  c.purchasePrice = buyerPays;            // what this owner paid (royalty-inclusive)
+  // default next price: +20% seller gain, +10% royalty on top
+  c.price = buyerPays * DEFAULT_INCREASE * (1 + ROYALTY_RATE);
   c.priceLocked = false;
   selectCountry(c);
-  showStatus(`Bought for ${paidPrice.toFixed(2)} SOL. ${royalty.toFixed(3)} SOL royalty to protocol, ${toSeller.toFixed(3)} SOL to ${maskAddress(prevOwner)}. Default +20% applied (${c.price.toFixed(2)} SOL). You may set a custom price ONCE — anywhere between ${paidPrice.toFixed(2)} and ${(paidPrice * PRICE_CAP_MULTIPLIER).toFixed(2)} SOL.`);
+  showStatus(`Bought for ${buyerPays.toFixed(2)} SOL — ${toSeller.toFixed(3)} SOL to ${maskAddress(prevOwner)}, ${royalty.toFixed(3)} SOL royalty to protocol. Default resale price set to ${c.price.toFixed(2)} SOL. Use the slider to set your own gain (once).`);
   renderLeaderboard();
   updateStats();
 };
 
-window.setNewPrice = function() {
-  const c = state.selected;
-  if (c.priceLocked) { showStatus("Price already locked. Wait for the next buyer."); return; }
-  const input = document.getElementById("new-price");
-  const val = parseFloat(input.value);
-  const cap = c.purchasePrice * PRICE_CAP_MULTIPLIER;
-  const minPrice = c.purchasePrice;
-  if (isNaN(val) || val < minPrice) { showStatus(`Price must be at least ${minPrice.toFixed(2)} SOL (what you paid).`); return; }
-  if (val > cap) {
-    c.price = cap;
-    showStatus(`Capped at 100% increase: ${c.price.toFixed(2)} SOL. Locked until next sale.`);
-  } else {
-    c.price = val;
-    showStatus(`Locked at ${c.price.toFixed(2)} SOL. You cannot change this again until someone buys it from you.`);
+function renderSlider(c) {
+  return `
+    <div style="width:100%;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <span style="font-size:11px;color:#6b7383;">+1%</span>
+        <span id="gain-label" style="font-size:22px;font-weight:600;color:#97C459;">+20%</span>
+        <span style="font-size:11px;color:#6b7383;">+100%</span>
+      </div>
+      <input id="gain-slider" type="range" min="1" max="100" value="20" style="width:100%;height:6px;cursor:pointer;accent-color:#97C459;margin-bottom:14px;" />
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;text-align:center;">
+          <div style="font-size:10px;color:#8a93a6;">Your take</div>
+          <div id="s-target" style="font-size:16px;font-weight:600;">—</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;text-align:center;">
+          <div style="font-size:10px;color:#8a93a6;">+10% royalty</div>
+          <div id="s-royalty" style="font-size:16px;font-weight:600;color:#8a93a6;">—</div>
+        </div>
+        <div style="background:rgba(151,196,89,0.1);border:1px solid rgba(151,196,89,0.3);border-radius:8px;padding:10px;text-align:center;">
+          <div style="font-size:10px;color:#97C459;">Buyer pays</div>
+          <div id="s-buyer" style="font-size:16px;font-weight:600;color:#97C459;">—</div>
+        </div>
+      </div>
+      <div style="background:rgba(151,196,89,0.1);border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span style="font-size:12px;color:#97C459;">Your profit when it sells</span>
+        <span id="s-profit" style="font-size:18px;font-weight:700;color:#97C459;">—</span>
+      </div>
+      <button id="s-lock" class="primary" style="width:100%;padding:11px;background:#5A9E2E;border-color:#5A9E2E;">Lock price</button>
+      <div style="font-size:11px;color:#6b7383;text-align:center;margin-top:6px;">You can set this once. After locking, it stays until someone buys it from you.</div>
+    </div>`;
+}
+
+function initSlider(c) {
+  const slider = document.getElementById("gain-slider");
+  if (!slider) return;
+  const paid = c.purchasePrice;
+  function refresh() {
+    const gainPct = parseInt(slider.value);
+    const target = paid * (1 + gainPct / 100);
+    const royalty = target * ROYALTY_RATE;
+    const buyerPays = target + royalty;
+    const profit = target - paid;
+    document.getElementById("gain-label").textContent = "+" + gainPct + "%";
+    document.getElementById("s-target").textContent = target.toFixed(2);
+    document.getElementById("s-royalty").textContent = royalty.toFixed(2);
+    document.getElementById("s-buyer").textContent = buyerPays.toFixed(2);
+    document.getElementById("s-profit").textContent = "+" + profit.toFixed(2) + " SOL";
+    const intensity = gainPct / 100;
+    const green = `rgb(${Math.round(151 - intensity*40)}, ${Math.round(196 + intensity*20)}, ${Math.round(89 - intensity*20)})`;
+    document.getElementById("gain-label").style.color = green;
+    document.getElementById("s-profit").style.color = green;
+    document.getElementById("s-lock").textContent = "Lock price at " + buyerPays.toFixed(2) + " SOL";
   }
-  c.priceLocked = true;
-  selectCountry(c); renderLeaderboard();
-};
+  slider.addEventListener("input", refresh);
+  document.getElementById("s-lock").addEventListener("click", () => {
+    const gainPct = parseInt(slider.value);
+    const target = paid * (1 + gainPct / 100);
+    c.price = target * (1 + ROYALTY_RATE);
+    c.priceLocked = true;
+    selectCountry(c);
+    showStatus(`Locked! Buyer pays ${c.price.toFixed(2)} SOL, you take ${target.toFixed(2)} SOL (+${(target - paid).toFixed(2)} SOL profit). Stays until someone buys it.`);
+    renderLeaderboard();
+  });
+  refresh();
+}
 
 function updateStats() {
   document.getElementById("stat-vol").textContent = state.volume.toFixed(2) + " SOL";
